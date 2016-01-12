@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+require "optparse"
+require "json"
+require_relative "../lib/active_record/sql_analyzer"
+require_relative "../lib/active_record/sql_analyzer/cli"
+require_relative "../lib/active_record/sql_analyzer/cli_processor"
+
+cli = ActiveRecord::SqlAnalyzer::CLI.new
+cli.parse_options(ARGV)
+cli.run
