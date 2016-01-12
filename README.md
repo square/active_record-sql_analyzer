@@ -1,5 +1,7 @@
 # ActiveRecord SQL Analyzer
 
+[![Build Status](https://travis-ci.org/square/active_record-sql_analyzer.svg?branch=master)](https://travis-ci.org/square/active_record-sql_analyzer)
+
 This gem provides a hook into ActiveRecord to redact, sample, and aggregate SQL queries being ran against production systems. It gives you better visibility into exactly what kind of queries are being run, and aids in planning pulling features out of your service.
 
 Currently this only supports MySQL. It should have no problems working with other SQL drivers, but we've only tested the redaction on MySQL. 

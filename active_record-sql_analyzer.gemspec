@@ -17,9 +17,5 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'activerecord', '~> 4.0', '>= 4.0.0'
 
-  s.add_development_dependency 'mysql2', '~> 0.4', '>= 0.4.0'
-  s.add_development_dependency 'bundler', '~> 1.8'
-  s.add_development_dependency 'rspec', '~> 3.4'
-  s.add_development_dependency 'rubocop', '~> 0.30'
-  s.add_development_dependency 'timecop', '~> 0.8'
+  s.add_development_dependency 'bundler', '~> 1.0'
 end

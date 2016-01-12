@@ -21,41 +21,42 @@ RSpec.describe ActiveRecord::SqlAnalyzer::CLI do
     end
   end
 
+  # I'm sorry
   it "parses logs and starts the processor" do
     expect(instance.processor).to receive(:run_definition) do |paths|
       expect(paths.length).to eq(6)
 
-      prefixes = paths[0, 3].map(&:first)
+      prefixes = paths[0, 3].map(&:first).uniq
       logs = paths[0, 3].map(&:last)
-      expect(prefixes.uniq).to eq(["bar"])
-      expect(logs).to include(/bar_definitions\.log\.0/)
-      expect(logs).to include(/bar_definitions\.log\.1/)
-      expect(logs).to include(/bar_definitions\.log\.2/)
+      expect(prefixes.length).to eq(1)
+      expect(logs).to include(/#{prefixes.first}_definitions\.log\.0/)
+      expect(logs).to include(/#{prefixes.first}_definitions\.log\.1/)
+      expect(logs).to include(/#{prefixes.first}_definitions\.log\.2/)
 
-      prefixes = paths[3, 6].map(&:first)
+      prefixes = paths[3, 6].map(&:first).uniq
       logs = paths[3, 6].map(&:last)
-      expect(prefixes.uniq).to eq(["foo"])
-      expect(logs).to include(/foo_definitions\.log\.0/)
-      expect(logs).to include(/foo_definitions\.log\.1/)
-      expect(logs).to include(/foo_definitions\.log\.2/)
+      expect(prefixes.length).to eq(1)
+      expect(logs).to include(/#{prefixes.first}_definitions\.log\.0/)
+      expect(logs).to include(/#{prefixes.first}_definitions\.log\.1/)
+      expect(logs).to include(/#{prefixes.first}_definitions\.log\.2/)
     end
 
     expect(instance.processor).to receive(:run_usage) do |paths|
       expect(paths.length).to eq(6)
 
-      prefixes = paths[0, 3].map(&:first)
+      prefixes = paths[0, 3].map(&:first).uniq
       logs = paths[0, 3].map(&:last)
-      expect(prefixes.uniq).to eq(["bar"])
-      expect(logs).to include(/bar\.log\.0/)
-      expect(logs).to include(/bar\.log\.1/)
-      expect(logs).to include(/bar\.log\.2/)
+      expect(prefixes.length).to eq(1)
+      expect(logs).to include(/#{prefixes.first}\.log\.0/)
+      expect(logs).to include(/#{prefixes.first}\.log\.1/)
+      expect(logs).to include(/#{prefixes.first}\.log\.2/)
 
-      prefixes = paths[3, 6].map(&:first)
+      prefixes = paths[3, 6].map(&:first).uniq
       logs = paths[3, 6].map(&:last)
-      expect(prefixes.uniq).to eq(["foo"])
-      expect(logs).to include(/foo\.log\.0/)
-      expect(logs).to include(/foo\.log\.1/)
-      expect(logs).to include(/foo\.log\.2/)
+      expect(prefixes.length).to eq(1)
+      expect(logs).to include(/#{prefixes.first}\.log\.0/)
+      expect(logs).to include(/#{prefixes.first}\.log\.1/)
+      expect(logs).to include(/#{prefixes.first}\.log\.2/)
     end
 
     expect(instance.processor).to receive(:dump).with(tmp_dir)
