@@ -10,11 +10,11 @@ module ActiveRecord
         end
 
         config[:backtrace_redactors].each do |redactor|
-          event[:caller].gsub!(redactor.search, redactor.replace)
+          event[:caller].gsub!(redactor.search, redactor.replace) if event[:caller]
         end
 
         config[:sql_redactors].each do |redactor|
-          event[:sql].gsub!(redactor.search, redactor.replace)
+          event[:sql].gsub!(redactor.search, redactor.replace) if event[:sql]
         end
       end
     end
