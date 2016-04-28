@@ -51,6 +51,19 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       end
     end
 
+    context "sql quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name = 'hello\\'s name'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name = '[REDACTED]'")
+      end
+    end
+
     context "sql" do
       let(:event) do
         {

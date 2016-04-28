@@ -150,7 +150,7 @@ module ActiveRecord
           Redactor.new(/\n/, " "),
           Redactor.new(/\s+/, " "),
           Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?-?\d+(\.\d+)?/, " = [REDACTED]"),
-          Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?x?'[^']*'/, " = '[REDACTED]'"),
+          Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?x?'.*?[^\\]'/, " = '[REDACTED]'"),
           Redactor.new(/VALUES \(.+\)$/, "VALUES ([REDACTED])"),
           Redactor.new(/IN \([^)]+\)/, "IN ([REDACTED])"),
           Redactor.new(/BETWEEN '[^']*' AND '[^']*'/, "BETWEEN '[REDACTED]' AND '[REDACTED]'"),
