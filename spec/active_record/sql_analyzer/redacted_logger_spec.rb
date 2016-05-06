@@ -64,6 +64,46 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       end
     end
 
+    context "sql quoted multiple WHERE" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name = 'hello\\'s name' AND age = '21'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name = '[REDACTED]' AND age = '[REDACTED]'")
+      end
+    end
+
+
+    context "sql escaped and quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name = 'hello\\\'s name'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name = '[REDACTED]'")
+      end
+    end
+
+    context "sql case insensitivity" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name lIkE 'hello'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name LIKE '[REDACTED]'")
+      end      
+    end
+
     context "sql" do
       let(:event) do
         {
@@ -74,6 +114,84 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
 
       it "redacts" do
         expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE id = [REDACTED]")
+      end
+    end
+
+    context "like quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name LIKE 'A \\'quoted\\' value.'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name LIKE '[REDACTED]'")
+      end
+    end
+
+    context "like escaped and quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name LIKE 'A \\\'quoted\\\' value.'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name LIKE '[REDACTED]'")
+      end
+    end
+
+    context "in quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name IN ('A \\'quoted\\' value.')"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ([REDACTED])")
+      end
+    end
+
+    context "in escaped and quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name IN ('A \\\'quoted\\\' value.')"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ([REDACTED])")
+      end
+    end
+
+    context "between quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name BETWEEN 'A \\'quoted\\' value.' AND 'Another value'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name BETWEEN '[REDACTED]' AND '[REDACTED]'")
+      end
+    end
+
+    context "between escaped and quoted" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name BETWEEN 'A \\\'quoted\\\' value.' AND 'Another value'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name BETWEEN '[REDACTED]' AND '[REDACTED]'")
       end
     end
   end
