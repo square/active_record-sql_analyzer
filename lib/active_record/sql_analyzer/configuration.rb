@@ -146,18 +146,19 @@ module ActiveRecord
       end
 
       def setup_defaults
+        quotedValuePattern = "'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'"
         @options[:sql_redactors] = [
           Redactor.new(/\n/, " "),
           Redactor.new(/\s+/, " "),
-          Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?-?\d+(\.\d+)?/, " = [REDACTED]"),
-          Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?x?'.*?[^\\]'/, " = '[REDACTED]'"),
-          Redactor.new(/VALUES \(.+\)$/, "VALUES ([REDACTED])"),
-          Redactor.new(/IN \([^)]+\)/, "IN ([REDACTED])"),
-          Redactor.new(/BETWEEN '[^']*' AND '[^']*'/, "BETWEEN '[REDACTED]' AND '[REDACTED]'"),
-          Redactor.new(/LIKE '[^'\\]*(?:\\.[^'\\]*)*'/, "LIKE '[REDACTED]'"),
-          Redactor.new(/ LIMIT \d+/, ""),
-          Redactor.new(/ OFFSET \d+/, ""),
-          Redactor.new(/INSERT INTO (`?\w+`?) \([^)]+\)/, 'INSERT INTO \1 ([COLUMNS])'),
+          Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?-?\d+(\.\d+)?/i, " = [REDACTED]"),
+          Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?x?#{quotedValuePattern}/i, " = '[REDACTED]'"),
+          Redactor.new(/VALUES \(.+\)$/i, "VALUES ([REDACTED])"),
+          Redactor.new(/IN \([^)]+\)/i, "IN ([REDACTED])"),
+          Redactor.new(/BETWEEN #{quotedValuePattern} AND #{quotedValuePattern}/i, "BETWEEN '[REDACTED]' AND '[REDACTED]'"),
+          Redactor.new(/LIKE #{quotedValuePattern}/i, "LIKE '[REDACTED]'"), 
+          Redactor.new(/ LIMIT \d+/i, ""),
+          Redactor.new(/ OFFSET \d+/i, ""),
+          Redactor.new(/INSERT INTO (`?\w+`?) \([^)]+\)/i, 'INSERT INTO \1 ([COLUMNS])'),
         ]
 
         @options[:should_log_sample_proc] = Proc.new { |_name| false }
