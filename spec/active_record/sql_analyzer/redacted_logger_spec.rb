@@ -194,5 +194,18 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
         expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name BETWEEN '[REDACTED]' AND '[REDACTED]'")
       end
     end
+
+    context "in with = and other where clauses" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "SELECT * FROM foo WHERE name IN ('value=') AND name = 'value'"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ([REDACTED]) AND name = '[REDACTED]'")
+      end
+    end
   end
 end

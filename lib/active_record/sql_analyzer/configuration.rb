@@ -150,10 +150,10 @@ module ActiveRecord
         @options[:sql_redactors] = [
           Redactor.new(/\n/, " "),
           Redactor.new(/\s+/, " "),
+          Redactor.new(/IN \([^)]+\)/i, "IN ([REDACTED])"),
           Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?-?\d+(\.\d+)?/i, " = [REDACTED]"),
           Redactor.new(/(\s|\b|`)(=|!=|>=|>|<=|<) ?(BINARY )?x?#{quotedValuePattern}/i, " = '[REDACTED]'"),
           Redactor.new(/VALUES \(.+\)$/i, "VALUES ([REDACTED])"),
-          Redactor.new(/IN \([^)]+\)/i, "IN ([REDACTED])"),
           Redactor.new(/BETWEEN #{quotedValuePattern} AND #{quotedValuePattern}/i, "BETWEEN '[REDACTED]' AND '[REDACTED]'"),
           Redactor.new(/LIKE #{quotedValuePattern}/i, "LIKE '[REDACTED]'"), 
           Redactor.new(/ LIMIT \d+/i, ""),
