@@ -74,7 +74,7 @@ RSpec.describe "End to End" do
 
     expect(log_def_hash.length).to eq(2)
 
-    expect(log_def_hash[id_sha]["sql"]).to include("mt.id = [REDACTED]")
+    expect(log_def_hash[id_sha]["sql"]).to include("mt.id = '[REDACTED]'")
     expect(log_def_hash[str_sha]["sql"]).to include("mt.test_string = '[REDACTED]'")
   end
 
@@ -90,7 +90,7 @@ RSpec.describe "End to End" do
 
     expect(log_def_hash.length).to eq(2)
 
-    expect(log_def_hash[id_sha]["sql"]).to include("id = [REDACTED]")
+    expect(log_def_hash[id_sha]["sql"]).to include("id = '[REDACTED]'")
     expect(log_def_hash[str_sha]["sql"]).to include("test_string = '[REDACTED]'")
   end
 

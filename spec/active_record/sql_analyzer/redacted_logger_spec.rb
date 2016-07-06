@@ -1,5 +1,9 @@
+require "spec_helper"
+require "sql-parser"
+
 RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
   let(:tmp_dir) { Dir.mktmpdir }
+  let(:parser) { SQLParser::Parser.new }
   after { FileUtils.remove_entry(tmp_dir) }
 
   context "#filter_event" do
@@ -17,6 +21,13 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
           [/erb_erb_[0-9]+_[0-9]+/, ""]
         ]
       end
+      # All raw SQL should be valid :)
+      expect { parser.scan_str(event[:sql]) }.not_to raise_exception if event[:sql].present?
+    end
+
+    after do
+      # All redacted SQL should be valid
+      expect { parser.scan_str(filter_event[:sql]) }.not_to raise_exception if filter_event[:sql].present?
     end
 
     context "ambiguous backtraces" do
@@ -101,7 +112,7 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
 
       it "redacts" do
         expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name LIKE '[REDACTED]'")
-      end      
+      end
     end
 
     context "sql" do
@@ -113,7 +124,7 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       end
 
       it "redacts" do
-        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE id = [REDACTED]")
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE id = '[REDACTED]'")
       end
     end
 
@@ -121,12 +132,12 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       let(:event) do
         {
           caller: [""],
-          sql: "SELECT * FROM foo WHERE name LIKE 'A \\'quoted\\' value.'"
+          sql: %{SELECT * FROM foo WHERE name LIKE 'A \\'quoted\\' value.' OR name LIKE "another ""quoted"" \\"value\\""}
         }
       end
 
       it "redacts" do
-        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name LIKE '[REDACTED]'")
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name LIKE '[REDACTED]' OR name LIKE '[REDACTED]'")
       end
     end
 
@@ -147,12 +158,12 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       let(:event) do
         {
           caller: [""],
-          sql: "SELECT * FROM foo WHERE name IN ('A \\'quoted\\' value.')"
+          sql: "SELECT * FROM foo WHERE name IN ('A ''quoted'' value.')"
         }
       end
 
       it "redacts" do
-        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ([REDACTED])")
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ('[REDACTED]')")
       end
     end
 
@@ -160,20 +171,20 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       let(:event) do
         {
           caller: [""],
-          sql: "SELECT * FROM foo WHERE name IN ('A \\\'quoted\\\' value.')"
+          sql: %{SELECT * FROM foo WHERE name IN ('A ''quoted'' value.', "another ""quoted"" \\"value\\"")}
         }
       end
 
       it "redacts" do
-        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ([REDACTED])")
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ('[REDACTED]')")
       end
     end
 
-    context "between quoted" do
+    context "between strings" do
       let(:event) do
         {
           caller: [""],
-          sql: "SELECT * FROM foo WHERE name BETWEEN 'A \\'quoted\\' value.' AND 'Another value'"
+          sql: "SELECT * FROM foo WHERE name BETWEEN 'A value.' AND 'Another value'"
         }
       end
 
@@ -182,11 +193,11 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       end
     end
 
-    context "between escaped and quoted" do
+    context "between strings with escaped quotes" do
       let(:event) do
         {
           caller: [""],
-          sql: "SELECT * FROM foo WHERE name BETWEEN 'A \\\'quoted\\\' value.' AND 'Another value'"
+          sql: "SELECT * FROM foo WHERE name BETWEEN 'A ''quoted'' value.' AND 'Another \\'value\\''"
         }
       end
 
@@ -204,7 +215,20 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       end
 
       it "redacts" do
-        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ([REDACTED]) AND name = '[REDACTED]'")
+        expect(filter_event[:sql]).to eq("SELECT * FROM foo WHERE name IN ('[REDACTED]') AND name = '[REDACTED]'")
+      end
+    end
+
+    context "insert" do
+      let(:event) do
+        {
+          caller: [""],
+          sql: "INSERT INTO `boom` (`bam`, `foo`) VALUES ('howdy', 'dowdy')"
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:sql]).to eq("INSERT INTO `boom` (REDACTED_COLUMNS) VALUES ('[REDACTED]')")
       end
     end
   end
