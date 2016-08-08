@@ -19,8 +19,8 @@ module ActiveRecord
       def process_queue
         event = @queue.pop
 
-        event[:caller] = SqlAnalyzer.config[:backtrace_filter_proc].call(event[:caller])
-        event[:sql] = SqlAnalyzer.config[:sql_redactor_complex_proc].call(event[:sql].dup)
+        event[:caller] = event[:caller].map(&SqlAnalyzer.config[:backtrace_filter_proc])
+        event[:sql] = event[:sql].map(&:dup).map(&SqlAnalyzer.config[:sql_redactor_complex_proc])
 
         logger = event.delete(:logger)
         logger.filter_event(event)

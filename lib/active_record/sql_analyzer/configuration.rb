@@ -117,6 +117,12 @@ module ActiveRecord
         @options[:ambiguous_backtrace_lines] = lines
       end
 
+      # Disable transaction consolidation. With transaction consolidation enabled, the logger will log full transactions
+      # as single statements.
+      def disable_consolidate_transactions
+        @config[:consolidate_transactions] = false
+      end
+
       def [](key)
         @options[key]
       end
@@ -169,6 +175,7 @@ module ActiveRecord
         @options[:analyzers] = []
         @options[:logger_root_path] = Rails.root.join('log')
         @options[:backtrace_filter_proc] = BacktraceFilter.proc
+        @options[:consolidate_transactions] = true
       end
     end
   end

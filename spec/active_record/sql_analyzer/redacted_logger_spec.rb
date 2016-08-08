@@ -21,8 +21,9 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
           [/erb_erb_[0-9]+_[0-9]+/, ""]
         ]
       end
+
       # All raw SQL should be valid :)
-      expect { parser.scan_str(event[:sql]) }.not_to raise_exception if event[:sql].present?
+      expect { event[:sql].map { |sql| parser.scan_str sql } }.not_to raise_exception if event[:sql].any?(&:present?)
     end
 
     after do
@@ -33,8 +34,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "ambiguous backtraces" do
       let(:event) do
         {
-          caller: %w(ambiguous foo bar),
-          sql: ""
+          caller: [%w(ambiguous foo bar)],
+          sql: [""]
         }
       end
 
@@ -52,8 +53,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "backtrace" do
       let(:event) do
         {
-          caller: %w(foo-bar-erb_erb_1_5),
-          sql: ""
+          caller: [%w(foo-bar-erb_erb_1_5)],
+          sql: [""]
         }
       end
 
@@ -65,8 +66,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "sql quoted" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name = 'hello\\'s name'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name = 'hello\\'s name'"]
         }
       end
 
@@ -78,8 +79,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "sql quoted multiple WHERE" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name = 'hello\\'s name' AND age = '21'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name = 'hello\\'s name' AND age = '21'"]
         }
       end
 
@@ -92,8 +93,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "sql escaped and quoted" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name = 'hello\\\'s name'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name = 'hello\\\'s name'"]
         }
       end
 
@@ -105,8 +106,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "sql case insensitivity" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name lIkE 'hello'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name lIkE 'hello'"]
         }
       end
 
@@ -118,8 +119,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "sql" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE id = 1234"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE id = 1234"]
         }
       end
 
@@ -131,8 +132,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "like quoted" do
       let(:event) do
         {
-          caller: [""],
-          sql: %{SELECT * FROM foo WHERE name LIKE 'A \\'quoted\\' value.' OR name LIKE "another ""quoted"" \\"value\\""}
+          caller: [[""]],
+          sql: [%{SELECT * FROM foo WHERE name LIKE 'A \\'quoted\\' value.' OR name LIKE "another ""quoted"" \\"value\\""}]
         }
       end
 
@@ -144,8 +145,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "like escaped and quoted" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name LIKE 'A \\\'quoted\\\' value.'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name LIKE 'A \\\'quoted\\\' value.'"]
         }
       end
 
@@ -157,8 +158,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "in quoted" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name IN ('A ''quoted'' value.')"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name IN ('A ''quoted'' value.')"]
         }
       end
 
@@ -170,8 +171,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "in escaped and quoted" do
       let(:event) do
         {
-          caller: [""],
-          sql: %{SELECT * FROM foo WHERE name IN ('A ''quoted'' value.', "another ""quoted"" \\"value\\"")}
+          caller: [[""]],
+          sql: [%{SELECT * FROM foo WHERE name IN ('A ''quoted'' value.', "another ""quoted"" \\"value\\"")}]
         }
       end
 
@@ -183,8 +184,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "between strings" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name BETWEEN 'A value.' AND 'Another value'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name BETWEEN 'A value.' AND 'Another value'"]
         }
       end
 
@@ -196,8 +197,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "between strings with escaped quotes" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name BETWEEN 'A ''quoted'' value.' AND 'Another \\'value\\''"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name BETWEEN 'A ''quoted'' value.' AND 'Another \\'value\\''"]
         }
       end
 
@@ -209,8 +210,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "in with = and other where clauses" do
       let(:event) do
         {
-          caller: [""],
-          sql: "SELECT * FROM foo WHERE name IN ('value=') AND name = 'value'"
+          caller: [[""]],
+          sql: ["SELECT * FROM foo WHERE name IN ('value=') AND name = 'value'"]
         }
       end
 
@@ -222,8 +223,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
     context "insert" do
       let(:event) do
         {
-          caller: [""],
-          sql: "INSERT INTO `boom` (`bam`, `foo`) VALUES ('howdy', 'dowdy')"
+          caller: [[""]],
+          sql: ["INSERT INTO `boom` (`bam`, `foo`) VALUES ('howdy', 'dowdy')"]
         }
       end
 
