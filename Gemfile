@@ -7,6 +7,7 @@ group :test do
   gem 'rspec', '~> 3.4'
   gem 'rubocop', '~> 0.30'
   gem 'timecop', '~> 0.8'
+  gem 'sql-parser', git: 'https://github.com/nerdrew/sql-parser.git'
 end
 
 gemspec
