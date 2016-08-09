@@ -120,11 +120,11 @@ RSpec.describe "End to End" do
     str_like_sha = log_reverse_hash[2]
     id_gt_sha = log_reverse_hash[1]
 
-    expect(log_def_hash[id_gt_sha]["sql"]).to include("id = [REDACTED] and id = [REDACTED]")
+    expect(log_def_hash[id_gt_sha]["sql"]).to include("id = '[REDACTED]' and id = '[REDACTED]'")
     expect(log_def_hash[str_like_sha]["sql"]).to include("test_string LIKE '[REDACTED]'")
     expect(log_def_hash[id_gt_sha]["transaction"]).to eq(log_def_hash[str_like_sha]["transaction"])
 
-    expect(log_def_hash[id_eq_sha]["sql"]).to include("id = [REDACTED]")
+    expect(log_def_hash[id_eq_sha]["sql"]).to include("id = '[REDACTED]'")
     expect(log_def_hash[str_eq_sha]["sql"]).to include("test_string = '[REDACTED]'")
     expect(log_def_hash[str_eq_sha]["transaction"]).to eq(log_def_hash[id_eq_sha]["transaction"])
 
@@ -157,7 +157,7 @@ RSpec.describe "End to End" do
     id_sha = log_reverse_hash[1]
     str_sha = log_reverse_hash[2]
 
-    expect(log_def_hash[id_sha]["sql"]).to include("id = [REDACTED]")
+    expect(log_def_hash[id_sha]["sql"]).to include("id = '[REDACTED]'")
     expect(log_def_hash[str_sha]["sql"]).to include("test_string = '[REDACTED]'")
 
     expect(log_def_hash[id_sha]["transaction"]).not_to be_nil
@@ -179,7 +179,7 @@ RSpec.describe "End to End" do
 
       expect(log_def_hash.size).to eq(1)
       expect(log_def_hash.map { |_hash, query| query['sql'] }).to eq([
-        "SELECT * FROM matching_table WHERE id = [REDACTED]"])
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'"])
     end
 
     it "Samples some but not other whole transactions" do
@@ -195,7 +195,7 @@ RSpec.describe "End to End" do
 
       expect(log_def_hash.size).to eq(2)
       expect(Set.new(log_def_hash.map { |_hash, query| query['sql'] })).to eq(Set.new([
-        "SELECT * FROM matching_table WHERE id = [REDACTED]",
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'",
         "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'"]))
     end
   end
