@@ -4,15 +4,13 @@ module ActiveRecord
   module SqlAnalyzer
     module Monkeypatches
       module Query
-        QueryAnalyzerCallInTransaction = Struct.new(:sql, :caller)
+        QueryAnalyzerCall = Struct.new(:sql, :caller)
 
         def execute(sql, *args)
           return super unless SqlAnalyzer.config
 
-
           if @_query_analyzer_private_transaction_queue
-            call_in_transaction = QueryAnalyzerCallInTransaction.new(sql, caller)
-            @_query_analyzer_private_transaction_queue << call_in_transaction
+            @_query_analyzer_private_transaction_queue << QueryAnalyzerCall.new(sql, caller)
           else
             safe_sql = nil
 
@@ -25,7 +23,7 @@ module ActiveRecord
 
                 if safe_sql =~ analyzer[:table_regex]
                   SqlAnalyzer.background_processor <<
-                    _query_analyzer_private_query_stanza([safe_sql], [caller], analyzer)
+                    _query_analyzer_private_query_stanza([QueryAnalyzerCall.new(safe_sql, caller)], analyzer)
                 end
               end
             end
@@ -42,8 +40,9 @@ module ActiveRecord
             if SqlAnalyzer.config[:should_log_sample_proc].call(analyzer[:name])
               # Again, trying to only re-encode and join strings if the transaction is actually
               # sampled.
-              reencoded_calls ||= _query_analyzer_private_reencode_transaction(@_query_analyzer_private_transaction_queue)
-
+              reencoded_calls ||= @_query_analyzer_private_transaction_queue.map do |call|
+                QueryAnalyzerCall.new(call.sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace), call.caller)
+              end
 
               matching_calls = reencoded_calls.select do |call|
                 (call.sql =~ /^(UPDATE|INSERT|DELETE)/) || (call.sql =~ analyzer[:table_regex])
@@ -60,37 +59,19 @@ module ActiveRecord
                 end
 
                 SqlAnalyzer.background_processor <<
-                  _query_analyzer_private_query_stanza(matching_calls.map(&:sql),
-                                                       matching_calls.map(&:caller),
-                                                       analyzer)
+                  _query_analyzer_private_query_stanza(matching_calls, analyzer)
               end
             end
           end
         end
 
-        # Re-encode transaction and remove contiguous duplicates
-        def _query_analyzer_private_reencode_transaction(transaction)
-          transaction_out = []
-
-          transaction.each do |call|
-            reencoded_call = QueryAnalyzerCallInTransaction.new(
-              call.sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace), call.caller)
-            if reencoded_call.sql !~ /^SELECT/ or reencoded_call != transaction_out.last
-              transaction_out << reencoded_call
-            end
-          end
-
-          transaction_out
-        end
-
         # Helper method to construct the event for a query or transaction.
         # safe_sql [string]: SQL statement or combined SQL statement for transaction
-        # kaller [list[list[String]]]: List of callstacks for the query. In a non-transaction, this always has length 1.
-        # analyzer [Hash]: Analyzer configuration for an analyzer.
-        def _query_analyzer_private_query_stanza(safe_sql, kaller, analyzer)
+        # calls: A list of QueryAnalyzerCall objects to be turned into call hashes
+        def _query_analyzer_private_query_stanza(calls, analyzer)
           {
-            sql: safe_sql,
-            caller: kaller,
+            # Calls are of the format {sql: String, caller: String}
+            calls: calls.map(&:to_h),
             logger: analyzer[:logger_instance],
             tag: Thread.current[:_ar_analyzer_tag],
             request_path: Thread.current[:_ar_analyzer_request_path],

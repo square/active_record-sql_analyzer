@@ -185,8 +185,8 @@ RSpec.describe "End to End" do
   it "Logs transaction with repeated selects correctly" do
     transaction do
       execute "SELECT * FROM matching_table WHERE id = 4321"
-      2.times do
-        execute "SELECT * FROM matching_table WHERE test_string = '4321'"
+      ['blah', 'bloo'].each do |s|
+        execute "SELECT * FROM matching_table WHERE test_string = '#{s}'"
       end
     end
 
@@ -212,7 +212,6 @@ RSpec.describe "End to End" do
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
                                                                     "BEGIN; " \
       "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
-      "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
       "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
       "COMMIT;")
   end
