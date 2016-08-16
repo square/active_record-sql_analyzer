@@ -55,6 +55,11 @@ RSpec.describe "End to End" do
     wait_for_pop
   end
 
+  def transaction
+    DBConnection.connection.transaction { yield }
+    wait_for_pop
+  end
+
   it "does not log with a non-matching table" do
     execute "SELECT * FROM nonmatching_table"
 
@@ -105,63 +110,135 @@ RSpec.describe "End to End" do
   end
 
   it "logs multiple queries in a transaction correctly" do
-    DBConnection.connection.transaction do
-      4.times { execute "SELECT * FROM matching_table WHERE id = 4321" }
-      3.times { execute "SELECT * FROM matching_table WHERE test_string = 'abc'" }
-    end
-
-    DBConnection.connection.transaction do
-      2.times { execute "SELECT * FROM matching_table WHERE test_string LIKE 'abc'" }
-      execute "SELECT * FROM matching_table WHERE id > 2 and id < 4"
-    end
-
-    id_eq_sha = log_reverse_hash[4]
-    str_eq_sha = log_reverse_hash[3]
-    str_like_sha = log_reverse_hash[2]
-    id_gt_sha = log_reverse_hash[1]
-
-    expect(log_def_hash[id_gt_sha]["sql"]).to include("id = '[REDACTED]' and id = '[REDACTED]'")
-    expect(log_def_hash[str_like_sha]["sql"]).to include("test_string LIKE '[REDACTED]'")
-    expect(log_def_hash[id_gt_sha]["transaction"]).to eq(log_def_hash[str_like_sha]["transaction"])
-
-    expect(log_def_hash[id_eq_sha]["sql"]).to include("id = '[REDACTED]'")
-    expect(log_def_hash[str_eq_sha]["sql"]).to include("test_string = '[REDACTED]'")
-    expect(log_def_hash[str_eq_sha]["transaction"]).to eq(log_def_hash[id_eq_sha]["transaction"])
-
-    expect(log_def_hash[str_like_sha]["transaction"]).to_not eq(log_def_hash[id_eq_sha]["transaction"])
-  end
-
-  it "Logs nested transactions correctly" do
-    DBConnection.connection.transaction do
+    transaction do
       execute "SELECT * FROM matching_table WHERE id = 4321"
-      DBConnection.connection.transaction do
-        2.times { execute "SELECT * FROM matching_table WHERE test_string = 'abc'" }
+      execute "SELECT * FROM matching_table WHERE test_string = 'abc'"
+    end
+
+    2.times do
+      transaction do
+        execute "SELECT * FROM matching_table WHERE test_string = 'abc'"
+        execute "SELECT * FROM matching_table WHERE id = 4321"
       end
     end
 
+    transaction_executed_once_sha = log_reverse_hash[1]
+    transaction_executed_twice_sha = log_reverse_hash[2]
 
-    id_sha = log_reverse_hash[1]
-    str_sha = log_reverse_hash[2]
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+      "BEGIN; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+      "COMMIT;")
 
-    expect(log_def_hash[id_sha]["transaction"]).to eq(log_def_hash[str_sha]["transaction"])
-    expect(log_def_hash[str_sha]["transaction"]).not_to be_nil
+    expect(log_def_hash[transaction_executed_twice_sha]["sql"]).to eq(
+     "BEGIN; " \
+     "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+     "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+     "COMMIT;")
   end
 
-  it "Logs empty transactions correctly" do
-    DBConnection.connection.transaction do
+  it "Logs nested transactions correctly" do
+    transaction do
+      execute "SELECT * FROM matching_table WHERE id = 4321"
+      transaction do
+        execute "SELECT * FROM matching_table WHERE test_string = 'abc'"
+      end
+    end
+
+    transaction_executed_once_sha = log_reverse_hash[1]
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+        "BEGIN; " \
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+        "COMMIT;")
+  end
+
+  it "Logs transactions with inserts correctly" do
+    transaction do
+      execute "INSERT INTO matching_table (test_string) VALUES ('test_value')"
       execute "SELECT * FROM matching_table WHERE id = 4321"
     end
 
-    2.times { execute "SELECT * FROM matching_table WHERE test_string = 'abc'" }
+    transaction_executed_once_sha = log_reverse_hash[1]
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+          "BEGIN; " \
+            "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
+            "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+            "COMMIT;")
+  end
 
-    id_sha = log_reverse_hash[1]
-    str_sha = log_reverse_hash[2]
+  it "Logs mixed matching-nonmatching selects correctly" do
+    transaction do
+      execute "SELECT * FROM matching_table WHERE id = 4321"
+      execute "SELECT * FROM nonmatching_table WHERE id = 4321"
+    end
 
-    expect(log_def_hash[id_sha]["sql"]).to include("id = '[REDACTED]'")
-    expect(log_def_hash[str_sha]["sql"]).to include("test_string = '[REDACTED]'")
+    transaction_executed_once_sha = log_reverse_hash[1]
 
-    expect(log_def_hash[id_sha]["transaction"]).not_to be_nil
-    expect(log_def_hash[str_sha]["transaction"]).to be_nil
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+      "BEGIN; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "COMMIT;")
+  end
+
+  it "Logs transaction with repeated selects correctly" do
+    transaction do
+      execute "SELECT * FROM matching_table WHERE id = 4321"
+      ['blah', 'bloo'].each do |s|
+        execute "SELECT * FROM matching_table WHERE test_string = '#{s}'"
+      end
+    end
+
+    transaction_executed_once_sha = log_reverse_hash[1]
+
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+                                                                    "BEGIN; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+      "COMMIT;")
+  end
+
+  it "Logs transaction with repeated inserts correctly" do
+    transaction do
+      execute "SELECT * FROM matching_table WHERE id = 4321"
+      2.times do
+        execute "INSERT INTO matching_table (test_string) VALUES ('test_value')"
+      end
+    end
+
+    transaction_executed_once_sha = log_reverse_hash[1]
+
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+                                                                    "BEGIN; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
+      "COMMIT;")
+  end
+
+
+  it "Logs mixed matching-nonmatching with inserts correctly" do
+    transaction do
+      execute "SELECT * FROM matching_table WHERE id = 4321"
+      execute "INSERT INTO nonmatching_table (id) VALUES (1)"
+    end
+
+    transaction_executed_once_sha = log_reverse_hash[1]
+
+    expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+                                                                    "BEGIN; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "INSERT INTO nonmatching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
+      "COMMIT;")
+  end
+
+  it "Does not log nonmatching-only queries" do
+    transaction do
+      execute "SELECT * FROM nonmatching_table WHERE id = 4321"
+      execute "SELECT * FROM nonmatching_table WHERE id = 4321"
+    end
+
+    expect(log_def_hash.size).to eq(0)
   end
 
   context "Selectively sampling" do
@@ -183,20 +260,25 @@ RSpec.describe "End to End" do
     end
 
     it "Samples some but not other whole transactions" do
-      DBConnection.connection.transaction do
+      transaction do
         execute "SELECT * FROM matching_table WHERE id = 1"
         execute "SELECT * FROM matching_table WHERE test_string = 'abc'"
       end
 
-      DBConnection.connection.transaction do
+      transaction do
         execute "SELECT * FROM matching_table WHERE id = 1 and test_string = 'abc'"
         execute "SELECT * FROM matching_table WHERE id > 4 and id < 8"
       end
 
-      expect(log_def_hash.size).to eq(2)
-      expect(Set.new(log_def_hash.map { |_hash, query| query['sql'] })).to eq(Set.new([
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]'",
-        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'"]))
+
+      transaction_executed_once_sha = log_reverse_hash[1]
+
+      expect(log_def_hash.size).to eq(1)
+      expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
+        "BEGIN; " \
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+        "COMMIT;")
     end
   end
 

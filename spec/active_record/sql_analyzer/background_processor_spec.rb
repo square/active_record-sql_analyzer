@@ -3,7 +3,7 @@ RSpec.describe ActiveRecord::SqlAnalyzer::BackgroundProcessor do
 
   let(:instance) { described_class.new }
 
-  let(:event) { {caller: "CALLER", sql: "SQL", logger: logger} }
+  let(:event) { {calls: [{caller: "CALLER", sql: "SQL"}], logger: logger} }
 
   let(:logger) do
     Class.new do
@@ -34,10 +34,10 @@ RSpec.describe ActiveRecord::SqlAnalyzer::BackgroundProcessor do
 
     expect(logger.events).to eq(
       [
-        {
+        calls: [{
           caller: "BFP CALLER",
           sql: "CSRP SQL"
-        }
+        }]
       ]
     )
   end
