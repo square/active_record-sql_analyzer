@@ -44,18 +44,11 @@ module ActiveRecord
                 QueryAnalyzerCall.new(call.sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace), call.caller)
               end
 
-              matching_calls = reencoded_calls.select do |call|
-                (call.sql =~ /^(UPDATE|INSERT|DELETE)/) || (call.sql =~ analyzer[:table_regex])
-              end
+              has_matching_calls = reencoded_calls.any? { |call| call.sql =~ analyzer[:table_regex] }
 
-              if matching_calls.any?
-                # Add back in the begin and commit statements, using the correct call stack references
-                if reencoded_calls.first.sql == 'BEGIN'
-                  matching_calls.unshift(reencoded_calls.first)
-                end
-
-                if ['COMMIT', 'ROLLBACK'].include? reencoded_calls.last.sql
-                  matching_calls << reencoded_calls.last
+              if has_matching_calls
+                matching_calls = reencoded_calls.select do |call|
+                  (call.sql =~ /^(BEGIN|COMMIT|ROLLBACK|UPDATE|INSERT|DELETE)/) || (call.sql =~ analyzer[:table_regex])
                 end
 
                 SqlAnalyzer.background_processor <<

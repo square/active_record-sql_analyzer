@@ -241,6 +241,14 @@ RSpec.describe "End to End" do
     expect(log_def_hash.size).to eq(0)
   end
 
+  it "Does not log nonmatching-only insert transactions" do
+    transaction do
+      execute "INSERT INTO nonmatching_table (id) VALUES (1)"
+    end
+
+    expect(log_def_hash.size).to eq(0)
+  end
+
   context "Selectively sampling" do
     before do
       ActiveRecord::SqlAnalyzer.configure do |c|
