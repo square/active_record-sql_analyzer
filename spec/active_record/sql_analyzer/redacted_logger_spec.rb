@@ -98,7 +98,6 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       end
     end
 
-
     context "sql escaped and quoted" do
       let(:event) do
         {
@@ -261,6 +260,21 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
 
       it "redacts" do
         expect(filter_event[:sql]).to eq("INSERT INTO `boom` (REDACTED_COLUMNS) VALUES ('[REDACTED]')")
+      end
+    end
+
+    context "empty callstack" do
+      let(:event) do
+        {
+          calls: [{
+                    caller: [],
+                    sql: "INSERT INTO `boom` (`bam`, `foo`) VALUES ('howdy', 'dowdy')",
+                  }]
+        }
+      end
+
+      it "redacts" do
+        expect(filter_event[:caller]).to eq("")
       end
     end
   end

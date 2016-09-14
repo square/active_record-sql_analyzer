@@ -27,6 +27,8 @@ module ActiveRecord
           kaller.first
         end
 
+        return '' unless kaller
+
         config[:backtrace_redactors].each do |redactor|
           kaller.gsub!(redactor.search, redactor.replace)
         end
