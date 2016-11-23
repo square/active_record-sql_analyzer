@@ -35,7 +35,7 @@ module ActiveRecord
         logs.each { |l| queue << l }
 
         # Spin up threads to start processing the queue
-        threads = concurrency.times.map do
+        threads = Array.new(concurrency) do
           Thread.new(queue) do |t_queue|
             # Create a local copy of each definitions then merge them in
             CLIProcessor.process_queue(t_queue) do |local_definitions, line|
@@ -63,7 +63,7 @@ module ActiveRecord
         logs.each { |l| queue << l }
 
         # Spin up threads to start processing the queue
-        threads = concurrency.times.map do
+        threads = Array.new(concurrency) do
           Thread.new(queue) do |t_queue|
             # Create a local copy of the usage for each SHA then merge it in at the end
             CLIProcessor.process_queue(t_queue) do |local_usage, line|

@@ -22,10 +22,10 @@ module ActiveRecord
 
       def filter_caller(kaller)
         kaller = if config[:ambiguous_tracers].any? { |regex| kaller.first =~ regex }
-          kaller[0, config[:ambiguous_backtrace_lines]].join(", ")
-        else
-          kaller.first
-        end
+                   kaller[0, config[:ambiguous_backtrace_lines]].join(", ")
+                 else
+                   kaller.first
+                 end
 
         return '' unless kaller
 
