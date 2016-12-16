@@ -1,15 +1,13 @@
 bundler_args: --without development
-env:
-  global:
-    - JRUBY_OPTS="$JRUBY_OPTS --debug"
 language: ruby
 rvm:
-  - 2.1
   - 2.2
-  - 2.3.0
+  - 2.3.3
+  - 2.4.0-preview3
   - ruby-head
 matrix:
   allow_failures:
+    - rvm: 2.4.0-preview3
     - rvm: ruby-head
   fast_finish: true
 sudo: false

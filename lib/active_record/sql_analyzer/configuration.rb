@@ -108,7 +108,7 @@ module ActiveRecord
 
       # How many total lines to log when the caller is ambiguous
       def ambiguous_backtrace_lines(lines)
-        if !lines.is_a?(Fixnum)
+        if !lines.is_a?(Integer)
           raise ArgumentError, "Lines must be a Fixnum"
         elsif lines <= 1
           raise ArgumentError, "Lines cannot be <= 1"
@@ -129,7 +129,7 @@ module ActiveRecord
 
       private
 
-      def check_proc(proc, arity, msg)
+      def check_proc(proc, _arity, msg)
         if !proc.is_a?(Proc)
           raise ArgumentError, "You must pass a proc"
         elsif proc.arity != 1

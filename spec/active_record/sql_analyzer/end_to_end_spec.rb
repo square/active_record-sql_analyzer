@@ -216,6 +216,36 @@ RSpec.describe "End to End" do
       "COMMIT;")
   end
 
+  context "ActiveRecord generated transactions" do
+    before do
+      stub_const("Matching", Class.new(ActiveRecord::Base) do
+        self.table_name = "matching_table"
+
+        after_commit { self.class.last }
+      end)
+
+      stub_const("NonMatching", Class.new(ActiveRecord::Base) do
+        self.table_name = "nonmatching_table"
+
+        after_commit { self.class.last }
+      end)
+    end
+
+    it "Logs the matching statements in the transaction and logs after_commit hooks outside the transaction" do
+      Matching.transaction do
+        Matching.create!
+        NonMatching.create
+        NonMatching.last
+      end
+      NonMatching.create
+
+      expect(log_def_hash.map { |_hash, data| data["sql"] }).to match([
+        "INSERT INTO `matching_table` VALUES ()",
+        "BEGIN; INSERT INTO `matching_table` VALUES (); INSERT INTO `nonmatching_table` VALUES (); COMMIT;",
+        "SELECT `matching_table`.* FROM `matching_table` ORDER BY `matching_table`.`id` DESC"
+      ])
+    end
+  end
 
   it "Logs mixed matching-nonmatching with inserts correctly" do
     transaction do
@@ -278,15 +308,14 @@ RSpec.describe "End to End" do
         execute "SELECT * FROM matching_table WHERE id > 4 and id < 8"
       end
 
-
-      transaction_executed_once_sha = log_reverse_hash[1]
-
-      expect(log_def_hash.size).to eq(1)
-      expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
-        "BEGIN; " \
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
-        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
-        "COMMIT;")
+      expect(log_def_hash.map { |_hash, data| data["sql"] }).to match([
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'",
+        "BEGIN; "\
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; "\
+        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; "\
+        "COMMIT;",
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]' and id = '[REDACTED]'"
+      ])
     end
   end
 

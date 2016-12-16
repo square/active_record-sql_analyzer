@@ -19,6 +19,7 @@ class DBConnection
   end
 
   def self.setup_db
+    ActiveRecord::Base.raise_in_transactional_callbacks = true
     conn = ActiveRecord::Base.establish_connection(configuration)
     conn.connection.execute <<-SQL
       CREATE DATABASE IF NOT EXISTS ar_sql_analyzer_test
