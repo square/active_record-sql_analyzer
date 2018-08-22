@@ -267,9 +267,9 @@ RSpec.describe ActiveRecord::SqlAnalyzer::RedactedLogger do
       let(:event) do
         {
           calls: [{
-                    caller: [],
-                    sql: "INSERT INTO `boom` (`bam`, `foo`) VALUES ('howdy', 'dowdy')",
-                  }]
+            caller: [],
+            sql: "INSERT INTO `boom` (`bam`, `foo`) VALUES ('howdy', 'dowdy')",
+          }]
         }
       end
 

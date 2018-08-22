@@ -3,7 +3,7 @@ RSpec.describe ActiveRecord::SqlAnalyzer::BackgroundProcessor do
 
   let(:instance) { described_class.new }
 
-  let(:event) { {calls: [{caller: "CALLER", sql: "SQL"}], logger: logger} }
+  let(:event) { { calls: [{ caller: "CALLER", sql: "SQL" }], logger: logger } }
 
   let(:logger) do
     Class.new do
@@ -23,8 +23,8 @@ RSpec.describe ActiveRecord::SqlAnalyzer::BackgroundProcessor do
 
   before do
     ActiveRecord::SqlAnalyzer.configure do |c|
-      c.backtrace_filter_proc Proc.new { |lines| "BFP #{lines}" }
-      c.complex_sql_redactor_proc Proc.new { |sql| "CSRP #{sql}" }
+      c.backtrace_filter_proc(Proc.new { |lines| "BFP #{lines}" })
+      c.complex_sql_redactor_proc(Proc.new { |sql| "CSRP #{sql}" })
     end
   end
 

@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+
 require File.expand_path('../lib/active_record/sql_analyzer/version', __FILE__)
 Gem::Specification.new do |s|
   s.authors       = ['Zachary Anker', 'Gabriel Gilder']
@@ -15,7 +16,7 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib']
   s.version       = ActiveRecord::SqlAnalyzer::VERSION
 
-  s.add_dependency 'activerecord', '~> 4.0', '>= 4.0.0'
+  s.add_dependency 'activerecord'
 
   s.add_development_dependency 'bundler', '~> 1.0'
 end

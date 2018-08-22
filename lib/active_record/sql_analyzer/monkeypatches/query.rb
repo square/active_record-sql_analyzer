@@ -31,7 +31,7 @@ module ActiveRecord
 
               if safe_sql =~ analyzer[:table_regex]
                 SqlAnalyzer.background_processor <<
-                _query_analyzer_private_query_stanza([query_analyzer_call], analyzer)
+                  _query_analyzer_private_query_stanza([query_analyzer_call], analyzer)
               end
             end
           end
