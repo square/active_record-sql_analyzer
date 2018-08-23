@@ -1,7 +1,7 @@
 module ActiveRecord
   module SqlAnalyzer
     class CLI
-      attr_reader :options, :processor
+      attr_reader :options
 
       def initialize
         @options = {

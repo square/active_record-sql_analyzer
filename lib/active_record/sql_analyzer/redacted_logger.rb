@@ -4,7 +4,7 @@ module ActiveRecord
       def filter_event(event)
         # Determine if we're doing extended tracing or only the first
         calls = event.delete(:calls).map do |call|
-          {sql: filter_sql(call[:sql]), caller: filter_caller(call[:caller])}
+          { sql: filter_sql(call[:sql]), caller: filter_caller(call[:caller]) }
         end
 
         # De-duplicate redacted calls to avoid many transactions with looping "N+1" queries.

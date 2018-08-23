@@ -23,7 +23,6 @@ module ActiveRecord
         end
 
         local_data
-
       rescue => ex
         puts "#{ex.class}: #{ex.message}"
         puts ex.backtrace
@@ -73,7 +72,7 @@ module ActiveRecord
                 last_called, sha = line.split("|", 2)
                 last_called = Time.at(last_called.to_i).utc
 
-                local_usage[sha] ||= {"count" => 0}
+                local_usage[sha] ||= { "count" => 0 }
                 local_usage[sha]["count"] += 1
 
                 if !local_usage[sha]["last_called"] || local_usage[sha]["last_called"] < last_called

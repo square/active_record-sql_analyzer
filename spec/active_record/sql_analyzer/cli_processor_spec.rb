@@ -29,20 +29,18 @@ RSpec.describe ActiveRecord::SqlAnalyzer::CLIProcessor do
 
   before do
     write_logs(:foo,
-      {sql: "F-SQL1", caller: "CALLER1", tag: true},
-      {sql: "F-SQL2", caller: "CALLER2", tag: true},
-      {sql: "F-SQL1", caller: "CALLER1", tag: true},
-      {sql: "F-SQL3", caller: "CALLER3", tag: true},
-      {sql: "F-SQL2", caller: "CALLER2", tag: true}
-    )
+               { sql: "F-SQL1", caller: "CALLER1", tag: true },
+               { sql: "F-SQL2", caller: "CALLER2", tag: true },
+               { sql: "F-SQL1", caller: "CALLER1", tag: true },
+               { sql: "F-SQL3", caller: "CALLER3", tag: true },
+               { sql: "F-SQL2", caller: "CALLER2", tag: true })
 
     write_logs(:bar,
-      {sql: "B-SQL1", caller: "CALLER1"},
-      {sql: "B-SQL2", caller: "CALLER2"},
-      {sql: "B-SQL3", caller: "CALLER3"},
-      {sql: "B-SQL2", caller: "CALLER2"},
-      {sql: "B-SQL1", caller: "CALLER1"}
-    )
+               { sql: "B-SQL1", caller: "CALLER1" },
+               { sql: "B-SQL2", caller: "CALLER2" },
+               { sql: "B-SQL3", caller: "CALLER3" },
+               { sql: "B-SQL2", caller: "CALLER2" },
+               { sql: "B-SQL1", caller: "CALLER1" })
   end
 
   subject(:process) do

@@ -13,13 +13,14 @@ module ActiveRecord
       end
 
       def log(event)
-        sha = Digest::MD5.hexdigest(event.to_s)
+        json = event.to_json
+        sha = json.hash
         unless logged_shas.include?(sha)
-          definition_log_file.puts("#{sha}|#{event.to_json}")
+          definition_log_file.print("#{sha}|#{json}\n")
           logged_shas << sha
         end
 
-        log_file.puts("#{Time.now.to_i}|#{sha}")
+        log_file.print("#{Time.now.to_i}|#{sha}\n")
       end
 
       def close

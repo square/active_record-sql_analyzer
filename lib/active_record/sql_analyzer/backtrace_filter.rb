@@ -14,7 +14,7 @@ module ActiveRecord
       end
 
       def self.rails_root_regex
-        @rails_root ||= %r{^#{Regexp.escape(Rails.root.to_s)}}
+        @rails_root_regex ||= %r{^#{Regexp.escape(Rails.root.to_s)}}
       end
 
       def self.proc

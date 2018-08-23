@@ -36,7 +36,7 @@ RSpec.describe "End to End" do
   before do
     ActiveRecord::SqlAnalyzer.configure do |c|
       c.logger_root_path tmp_dir
-      c.log_sample_proc Proc.new { |_name| true }
+      c.log_sample_proc(Proc.new { |_name| true })
 
       c.add_analyzer(
         name: :test_tag,
@@ -129,13 +129,15 @@ RSpec.describe "End to End" do
       "BEGIN; " \
       "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
       "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
-      "COMMIT;")
+      "COMMIT;"
+    )
 
     expect(log_def_hash[transaction_executed_twice_sha]["sql"]).to eq(
-     "BEGIN; " \
-     "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
-     "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
-     "COMMIT;")
+      "BEGIN; " \
+      "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "COMMIT;"
+    )
   end
 
   it "Logs nested transactions correctly" do
@@ -148,10 +150,11 @@ RSpec.describe "End to End" do
 
     transaction_executed_once_sha = log_reverse_hash[1]
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
-        "BEGIN; " \
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
-        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
-        "COMMIT;")
+      "BEGIN; " \
+      "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+      "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
+      "COMMIT;"
+    )
   end
 
   it "Logs transactions with inserts correctly" do
@@ -162,10 +165,11 @@ RSpec.describe "End to End" do
 
     transaction_executed_once_sha = log_reverse_hash[1]
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
-          "BEGIN; " \
-            "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
-            "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
-            "COMMIT;")
+      "BEGIN; " \
+        "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
+        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
+        "COMMIT;"
+    )
   end
 
   it "Logs mixed matching-nonmatching selects correctly" do
@@ -179,7 +183,8 @@ RSpec.describe "End to End" do
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
       "BEGIN; " \
       "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
-      "COMMIT;")
+      "COMMIT;"
+    )
   end
 
   it "Logs transaction with repeated selects correctly" do
@@ -193,10 +198,11 @@ RSpec.describe "End to End" do
     transaction_executed_once_sha = log_reverse_hash[1]
 
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
-                                                                    "BEGIN; " \
+      "BEGIN; " \
       "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
       "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; " \
-      "COMMIT;")
+      "COMMIT;"
+    )
   end
 
   it "Logs transaction with repeated inserts correctly" do
@@ -210,10 +216,11 @@ RSpec.describe "End to End" do
     transaction_executed_once_sha = log_reverse_hash[1]
 
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
-                                                                    "BEGIN; " \
+      "BEGIN; " \
       "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
       "INSERT INTO matching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
-      "COMMIT;")
+      "COMMIT;"
+    )
   end
 
   context "ActiveRecord generated transactions" do
@@ -240,10 +247,10 @@ RSpec.describe "End to End" do
       NonMatching.create
 
       expect(log_def_hash.map { |_hash, data| data["sql"] }).to match([
-        "INSERT INTO `matching_table` VALUES ()",
-        "BEGIN; INSERT INTO `matching_table` VALUES (); INSERT INTO `nonmatching_table` VALUES (); COMMIT;",
-        "SELECT `matching_table`.* FROM `matching_table` ORDER BY `matching_table`.`id` DESC"
-      ])
+                                                                        "INSERT INTO `matching_table` VALUES ()",
+                                                                        "BEGIN; INSERT INTO `matching_table` VALUES (); INSERT INTO `nonmatching_table` VALUES (); COMMIT;",
+                                                                        "SELECT `matching_table`.* FROM `matching_table` ORDER BY `matching_table`.`id` DESC"
+                                                                      ])
     end
   end
 
@@ -256,10 +263,11 @@ RSpec.describe "End to End" do
     transaction_executed_once_sha = log_reverse_hash[1]
 
     expect(log_def_hash[transaction_executed_once_sha]["sql"]).to eq(
-                                                                    "BEGIN; " \
+      "BEGIN; " \
       "SELECT * FROM matching_table WHERE id = '[REDACTED]'; " \
       "INSERT INTO nonmatching_table (REDACTED_COLUMNS) VALUES ('[REDACTED]'); " \
-      "COMMIT;")
+      "COMMIT;"
+    )
   end
 
   it "Does not log nonmatching-only queries" do
@@ -284,7 +292,7 @@ RSpec.describe "End to End" do
       ActiveRecord::SqlAnalyzer.configure do |c|
         times_called = 0
         # Return true every other call, starting with the first call
-        c.log_sample_proc Proc.new { |_name| (times_called += 1) % 2 == 1 }
+        c.log_sample_proc(Proc.new { |_name| (times_called += 1) % 2 == 1 })
       end
     end
 
@@ -294,7 +302,8 @@ RSpec.describe "End to End" do
 
       expect(log_def_hash.size).to eq(1)
       expect(log_def_hash.map { |_hash, query| query['sql'] }).to eq([
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]'"])
+                                                                       "SELECT * FROM matching_table WHERE id = '[REDACTED]'"
+                                                                     ])
     end
 
     it "Samples some but not other whole transactions" do
@@ -309,20 +318,20 @@ RSpec.describe "End to End" do
       end
 
       expect(log_def_hash.map { |_hash, data| data["sql"] }).to match([
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]'",
-        "BEGIN; "\
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; "\
-        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; "\
-        "COMMIT;",
-        "SELECT * FROM matching_table WHERE id = '[REDACTED]' and id = '[REDACTED]'"
-      ])
+                                                                        "SELECT * FROM matching_table WHERE id = '[REDACTED]'",
+                                                                        "BEGIN; "\
+                                                                        "SELECT * FROM matching_table WHERE id = '[REDACTED]'; "\
+                                                                        "SELECT * FROM matching_table WHERE test_string = '[REDACTED]'; "\
+                                                                        "COMMIT;",
+                                                                        "SELECT * FROM matching_table WHERE id = '[REDACTED]' and id = '[REDACTED]'"
+                                                                      ])
     end
   end
 
   context "when sampling is disabled" do
     before do
       ActiveRecord::SqlAnalyzer.configure do |c|
-        c.log_sample_proc Proc.new { |_name| false }
+        c.log_sample_proc(Proc.new { |_name| false })
       end
     end
 
