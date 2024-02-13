@@ -2,7 +2,7 @@ module ActiveRecord
   module SqlAnalyzer
     module Monkeypatches
       module Tagger
-        def initialize(*)
+        def initialize(*, **)
           super
           @_ar_analyzer_tag = nil
         end

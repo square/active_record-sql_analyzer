@@ -11,8 +11,8 @@ module ActiveRecord
         else
           :execute
         end
-        define_method(execute_method) do |sql, *args|
-          return super(sql, args) unless SqlAnalyzer.config
+        define_method(execute_method) do |sql, *args, **kwargs|
+          return super(sql, *args, **kwargs) unless SqlAnalyzer.config
           safe_sql = nil
           query_analyzer_call = nil
 
@@ -20,7 +20,7 @@ module ActiveRecord
           # deferred until just before query execution, and so
           # begin_db_transaction is now called inside the `super` call here.
           begin
-            super(sql, args)
+            super(sql, *args, **kwargs)
           ensure
             # Record "full" transactions (see below for more information about "full")
             if @_query_analyzer_private_in_transaction
