@@ -6,37 +6,47 @@ module ActiveRecord
       module Query
         QueryAnalyzerCall = Struct.new(:sql, :caller)
 
-        def execute(sql, *args)
-          return super unless SqlAnalyzer.config
+        execute_method = if ActiveRecord.version >= Gem::Version.new('7.0')
+          :raw_execute
+        else
+          :execute
+        end
+        define_method(execute_method) do |sql, *args, **kwargs|
+          return super(sql, *args, **kwargs) unless SqlAnalyzer.config
           safe_sql = nil
           query_analyzer_call = nil
 
-          # Record "full" transactions (see below for more information about "full")
-          if @_query_analyzer_private_in_transaction
-            if @_query_analyzer_private_record_transaction
-              safe_sql ||= sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
-              query_analyzer_call ||= QueryAnalyzerCall.new(safe_sql, caller)
-              @_query_analyzer_private_transaction_queue << query_analyzer_call
+          # Starting with activerecord v6, transaction materialization is
+          # deferred until just before query execution, and so
+          # begin_db_transaction is now called inside the `super` call here.
+          begin
+            super(sql, *args, **kwargs)
+          ensure
+            # Record "full" transactions (see below for more information about "full")
+            if @_query_analyzer_private_in_transaction
+              if @_query_analyzer_private_record_transaction
+                safe_sql ||= sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
+                query_analyzer_call ||= QueryAnalyzerCall.new(safe_sql, caller)
+                @_query_analyzer_private_transaction_queue << query_analyzer_call
+              end
             end
-          end
 
-          # Record interesting queries
-          SqlAnalyzer.config[:analyzers].each do |analyzer|
-            if SqlAnalyzer.config[:should_log_sample_proc].call(analyzer[:name])
-              # This is here rather than above intentionally.
-              # We assume we're not going to be analyzing 100% of queries and want to only re-encode
-              # when it's actually relevant.
-              safe_sql ||= sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
-              query_analyzer_call ||= QueryAnalyzerCall.new(safe_sql, caller)
+            # Record interesting queries
+            SqlAnalyzer.config[:analyzers].each do |analyzer|
+              if SqlAnalyzer.config[:should_log_sample_proc].call(analyzer[:name])
+                # This is here rather than above intentionally.
+                # We assume we're not going to be analyzing 100% of queries and want to only re-encode
+                # when it's actually relevant.
+                safe_sql ||= sql.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
+                query_analyzer_call ||= QueryAnalyzerCall.new(safe_sql, caller)
 
-              if safe_sql =~ analyzer[:table_regex]
-                SqlAnalyzer.background_processor <<
-                  _query_analyzer_private_query_stanza([query_analyzer_call], analyzer)
+                if safe_sql =~ analyzer[:table_regex]
+                  SqlAnalyzer.background_processor <<
+                    _query_analyzer_private_query_stanza([query_analyzer_call], analyzer)
+                end
               end
             end
           end
-
-          super
         end
 
         def begin_db_transaction
